@@ -250,11 +250,11 @@ void pw_pre_add (hc_device_param_t *device_param, const u8 *pw_buf, const int pw
 {
   if (device_param->pws_pre_cnt < device_param->kernel_power)
   {
-    pw_pre_t *pw_pre = device_param->pws_pre_buf + device_param->pws_pre_cnt;
+    pw_pre_t *pw_pre = device_param->pws_pre_buf + device_param->pws_pre_cnt; //定位
 
-    memcpy (pw_pre->pw_buf, pw_buf, pw_len);
+    memcpy (pw_pre->pw_buf, pw_buf, pw_len); //初始化pw_pre
 
-    pw_pre->pw_len = pw_len;
+    pw_pre->pw_len = pw_len; //初始化pw_pre
 
     if (base_buf != NULL)
     {
@@ -263,7 +263,7 @@ void pw_pre_add (hc_device_param_t *device_param, const u8 *pw_buf, const int pw
       pw_pre->base_len = base_len;
     }
 
-    pw_pre->rule_idx = rule_idx;
+    pw_pre->rule_idx = rule_idx; //extra_info_straight.rule_pos_prev
 
     device_param->pws_pre_cnt++;
   }
@@ -291,6 +291,7 @@ void pw_base_add (hc_device_param_t *device_param, pw_pre_t *pw_pre)
   }
 }
 
+//???????
 void pw_add (hc_device_param_t *device_param, const u8 *pw_buf, const int pw_len)
 {
   if (device_param->pws_cnt < device_param->kernel_power)
@@ -590,15 +591,18 @@ int wl_data_init (hashcat_ctx_t *hashcat_ctx)
    * choose dictionary parser
    */
 
+//wordlist.c wl_data_init
   wl_data->func = get_next_word_std;
 
   if (hashconfig->opts_type & OPTS_TYPE_PT_UPPER)
   {
+    printf("hashconfig->opts_type & OPTS_TYPE_PT_UPPER\n");
     wl_data->func = get_next_word_uc;
   }
 
   if (hashconfig->opts_type & OPTS_TYPE_PT_LM)
   {
+    printf("hashconfig->opts_type & OPTS_TYPE_PT_LM\n");
     wl_data->func = get_next_word_lm;
   }
 

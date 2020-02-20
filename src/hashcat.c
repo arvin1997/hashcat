@@ -251,16 +251,22 @@ static int inner2_loop (hashcat_ctx_t *hashcat_ctx)
 
     if (user_options_extra->wordlist_mode == WL_MODE_STDIN)
     {
+      //如果是输入wordlist
+      printf("thread_calc_stdin\n");
       hc_thread_create (c_threads[backend_devices_idx], thread_calc_stdin, thread_param);
     }
     else
     {
+      //四个thread_calc
+      printf("thread_calc\n");
       hc_thread_create (c_threads[backend_devices_idx], thread_calc, thread_param);
     }
   }
 
+//主要线程
+printf("hashcat.c 263 主要线程开始\n");
   hc_thread_wait (backend_ctx->backend_devices_cnt, c_threads);
-
+printf("hashcat.c 263 主要线程完成\n");
   hcfree (c_threads);
 
   hcfree (threads_param);

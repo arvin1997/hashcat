@@ -23,6 +23,16 @@ static int conv_pos (const u8 c, const int pos_mem)
   return conv_ctoi (c);
 }
 
+//debug
+static int mangle_noop(char arr[RP_PASSWORD_SIZE],int arr_len)
+{
+  fputs("DO NOTHING",stdout);
+  char tag[5]={' ','N','_','W'};
+  int tag_len=5;
+  memcpy(&arr[arr_len],tag,(size_t)tag_len);
+  return (arr_len+tag_len);
+}
+
 static void MANGLE_TOGGLE_AT (char *arr, const int pos)
 {
   if (class_alpha (arr[pos])) arr[pos] ^= 0x20;
@@ -500,6 +510,9 @@ int _old_apply_rule (const char *rule, int rule_len, char in[RP_PASSWORD_SIZE], 
 
   int rule_pos;
 
+  //std::stdout<<"A NEW WORD: "<<out<<std::endl;
+  //printf("A NEW WORD: %s\n",out); // error
+
   for (rule_pos = 0; rule_pos < rule_len; rule_pos++)
   {
     if (is_hex_notation (rule, rule_len, rule_pos))
@@ -520,6 +533,7 @@ int _old_apply_rule (const char *rule, int rule_len, char in[RP_PASSWORD_SIZE], 
     }
   }
 
+  //只是一条复合rule！！
   for (rule_pos = 0; rule_pos < rule_len_new; rule_pos++)
   {
     int upos, upos2;

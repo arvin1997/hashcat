@@ -157,6 +157,7 @@ static int autotune (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
 
   if (device_param->is_cuda == true)
   {
+    printf("run_cuda_kernel_atinit\n");
     CU_rc = run_cuda_kernel_atinit (hashcat_ctx, device_param, device_param->cuda_d_pws_buf, kernel_power_max);
 
     if (CU_rc == -1) return -1;
@@ -164,6 +165,7 @@ static int autotune (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
 
   if (device_param->is_opencl == true)
   {
+    printf("run_opencl_kernel_atinit\n");
     CL_rc = run_opencl_kernel_atinit (hashcat_ctx, device_param, device_param->opencl_d_pws_buf, kernel_power_max);
 
     if (CL_rc == -1) return -1;
@@ -171,6 +173,7 @@ static int autotune (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
 
   if (user_options->slow_candidates == true)
   {
+    printf("user_options->slow_candidates == true\n");
   }
   else
   {
@@ -430,6 +433,8 @@ static int autotune (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
 
 HC_API_CALL void *thread_autotune (void *p)
 {
+
+  printf("");
   thread_param_t *thread_param = (thread_param_t *) p;
 
   hashcat_ctx_t *hashcat_ctx = thread_param->hashcat_ctx;

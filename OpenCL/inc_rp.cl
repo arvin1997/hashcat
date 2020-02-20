@@ -9,6 +9,7 @@
 #include "inc_common.h"
 #include "inc_rp.h"
 
+
 #ifndef MAYBE_UNUSED
 #define MAYBE_UNUSED
 #endif
@@ -709,7 +710,7 @@ DECLSPEC int mangle_title_sep (MAYBE_UNUSED const u8 p0, MAYBE_UNUSED const u8 p
 DECLSPEC int apply_rule (const u32 name, MAYBE_UNUSED const u8 p0, MAYBE_UNUSED const u8 p1, u32 *buf, const int in_len)
 {
   int out_len = in_len;
-
+  
   switch (name)
   {
     case RULE_OP_MANGLE_LREST:            out_len = mangle_lrest            (p0, p1,        buf, out_len); break;

@@ -141,6 +141,7 @@ static u64 get_work (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param
   status_ctx->words_off += work;
 
   hc_thread_mutex_unlock (status_ctx->mux_dispatcher);
+  printf("work: %d\n",work);
 
   return work;
 }
@@ -360,6 +361,7 @@ HC_API_CALL void *thread_calc_stdin (void *p)
   return NULL;
 }
 
+//主要线程调用的函数
 static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
 {
   user_options_t       *user_options       = hashcat_ctx->user_options;
@@ -375,8 +377,13 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
   const u32 attack_mode = user_options->attack_mode;
   const u32 attack_kern = user_options_extra->attack_kern;
 
-  if (user_options->slow_candidates == true)
+  printf("calc函数\n");
+
+  //当user_options->slow_candidates == true
+  if (user_options->slow_candidates == true) //先不关注这个模式
   {
+    //-S, --slow-candidates          |      | Enable slower (but advanced) candidate generators 
+    printf("user_options->slow_candidates == true\n");
     #ifdef WITH_BRAIN
     const u32 brain_session = user_options->brain_session;
     const u32 brain_attack  = user_options->brain_attack;
@@ -415,9 +422,12 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
 
     // attack modes from here
 
+    printf("attack_mode == %d\n",attack_mode);
     if (attack_mode == ATTACK_MODE_STRAIGHT)
     {
+      printf("attack_mode == ATTACK_MODE_STRAIGHT\n");
       char *dictfile = straight_ctx->dict;
+      printf("dictfile: %s\n",dictfile);
 
       extra_info_straight_t extra_info_straight;
 
@@ -449,7 +459,8 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
 
       u64 words_cur = 0;
 
-      while (status_ctx->run_thread_level1 == true)
+      //当status_ctx->run_thread_level1 == true
+      while (status_ctx->run_thread_level1 == true)  //？？？？？
       {
         u64 words_fin = 0;
 
@@ -463,7 +474,9 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
 
         const u64 pre_rejects_ignore = get_power (backend_ctx, device_param) / 2;
 
-        while (pre_rejects > pre_rejects_ignore)
+        //当pre_rejects > pre_rejects_ignore
+        printf("pre_rejects=%d pre_rejects_ignore=%d\n",pre_rejects,pre_rejects_ignore);
+        while (pre_rejects > pre_rejects_ignore) //????
         {
           u64 words_extra_total = 0;
 
@@ -517,6 +530,7 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
 
             words_extra = 0;
 
+            //调用_old_apply_rule
             slow_candidates_seek (hashcat_ctx_tmp, &extra_info_straight, words_cur, words_off);
 
             words_cur = words_off;
@@ -525,6 +539,7 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
             {
               extra_info_straight.pos = i;
 
+              //slow_candidates_next
               slow_candidates_next (hashcat_ctx_tmp, &extra_info_straight);
 
               if ((extra_info_straight.out_len < hashconfig->pw_min) || (extra_info_straight.out_len > hashconfig->pw_max))
@@ -548,9 +563,10 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
               }
               #endif
 
+              //新增pw_pre（表示entry的结构）
               pw_pre_add (device_param, extra_info_straight.out_buf, extra_info_straight.out_len, extra_info_straight.base_buf, extra_info_straight.base_len, extra_info_straight.rule_pos_prev);
 
-              if (status_ctx->run_thread_level1 == false) break;
+              if (status_ctx->run_thread_level1 == false) break; //？？？
             }
 
             words_cur = words_fin;
@@ -640,6 +656,7 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
 
         if (pws_cnt)
         {
+          printf("if (pws_cnt) %ld\n",pws_cnt); //等于wordlist中的entry数
           if (run_copy (hashcat_ctx, device_param, pws_cnt) == -1)
           {
             hc_fclose (&extra_info_straight.fp);
@@ -1245,11 +1262,14 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
       brain_client_disconnect (device_param);
     }
     #endif
-  }
+  } 
+
   else
   {
+    printf("not slow-candidates attack_mode=%d.\n",attack_mode);
     if ((attack_mode == ATTACK_MODE_BF) || (((hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) == 0) && (attack_mode == ATTACK_MODE_HYBRID2)))
     {
+      printf("(attack_mode == ATTACK_MODE_BF) || (((hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) == 0) && (attack_mode == ATTACK_MODE_HYBRID2))\n");
       if (((hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL) == 0) && (attack_mode == ATTACK_MODE_HYBRID2))
       {
         char *dictfile = straight_ctx->dict;
@@ -1290,10 +1310,12 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
     }
     else
     {
+      //printf("mode else mode=%d.\n",attack_mode);
       char *dictfile = straight_ctx->dict;
 
       if (attack_mode == ATTACK_MODE_COMBI)
       {
+        printf("attack_mode == ATTACK_MODE_COMBI");
         if (combinator_ctx->combs_mode == COMBINATOR_MODE_BASE_LEFT)
         {
           dictfile = combinator_ctx->dict1;
@@ -1328,6 +1350,7 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
           }
         }
       }
+      //printf()
 
       HCFILE fp;
 
@@ -1356,27 +1379,32 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
         return -1;
       }
 
+
       u64 words_cur = 0;
+
+      printf("run_thread_level1 == %d\n",status_ctx->run_thread_level1);
 
       while (status_ctx->run_thread_level1 == true)
       {
         u64 words_off = 0;
         u64 words_fin = 0;
-        u64 words_extra = -1U;
+        u64 words_extra = -1U;  //U无符号整型 最大值
         u64 words_extra_total = 0;
 
         memset (device_param->pws_comp, 0, device_param->size_pws_comp);
         memset (device_param->pws_idx,  0, device_param->size_pws_idx);
 
-        while (words_extra)
+        while (words_extra) //???
         {
-          const u64 work = get_work (hashcat_ctx, device_param, words_extra);
+          printf("get_work\n");
+          const u64 work = get_work (hashcat_ctx, device_param, words_extra);  //获取能处理的最大未处理entry数
 
-          if (work == 0) break;
+          if (work == 0) break; //为0则跳出
 
           words_extra = 0;
 
-          words_off = device_param->words_off;
+          //words_cur 初始为0
+          words_off = device_param->words_off; //？？
           words_fin = words_off + work;
 
           char *line_buf;
@@ -1440,7 +1468,7 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
 
         if (status_ctx->run_thread_level1 == false) break;
 
-        if (words_extra_total > 0)
+        if (words_extra_total > 0) //计算拒绝的candidate？
         {
           hc_thread_mutex_lock (status_ctx->mux_counter);
 
@@ -1467,7 +1495,8 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
 
         if (pws_cnt)
         {
-          if (run_copy (hashcat_ctx, device_param, pws_cnt) == -1)
+          printf("pws_cnt=%ld\n",pws_cnt);
+          if (run_copy (hashcat_ctx, device_param, pws_cnt) == -1)  //复制数据到GPU？？
           {
             if (attack_mode == ATTACK_MODE_COMBI) hc_fclose (&device_param->combs_fp);
 
@@ -1553,9 +1582,12 @@ static int calc (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param)
   device_param->kernel_accel = 0;
   device_param->kernel_loops = 0;
 
+  printf("calc函数 正常完成\n");
+
   return 0;
 }
 
+//主要线程
 HC_API_CALL void *thread_calc (void *p)
 {
   thread_param_t *thread_param = (thread_param_t *) p;
@@ -1573,6 +1605,7 @@ HC_API_CALL void *thread_calc (void *p)
 
   if (device_param->is_cuda == true)
   {
+    printf("device_param->is_cuda == true\n");
     if (hc_cuCtxSetCurrent (hashcat_ctx, device_param->cuda_context) == -1) return NULL;
   }
 

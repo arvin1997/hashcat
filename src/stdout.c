@@ -101,7 +101,9 @@ int process_stdout (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param,
   if (user_options->attack_mode == ATTACK_MODE_STRAIGHT)
   {
     pw_t pw;
+    
 
+    printf("stdout.c  外循环开始 pws_cnt=%d\n",pws_cnt);
     for (u64 gidvid = 0; gidvid < pws_cnt; gidvid++)
     {
       const int rc = gidd_to_pw_t (hashcat_ctx, device_param, gidvid, &pw);
@@ -113,9 +115,10 @@ int process_stdout (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param,
         return -1;
       }
 
+      printf("stdout.c  内循环开始 il_cnt=%d\n",il_cnt); //等于rule条数
       for (u32 il_pos = 0; il_pos < il_cnt; il_pos++)
       {
-        const u32 off = device_param->innerloop_pos + il_pos;
+        const u32 off = device_param->innerloop_pos + il_pos; //第几条rule
 
         if (hashconfig->opti_type & OPTI_TYPE_OPTIMIZED_KERNEL)
         {
@@ -123,17 +126,45 @@ int process_stdout (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param,
           {
             plain_buf[i] = pw.i[i];
           }
+          printf("调用 apply_rules_optimized\n");
 
           plain_len = apply_rules_optimized (straight_ctx->kernel_rules_buf[off].cmds, &plain_buf[0], &plain_buf[4], pw.pw_len);
         }
         else
         {
+          //尝试输入更大的plain_buf并在受语义规则处理后变成特殊结构
+          u32 plain_buf_plus[300*(65)]={0}; //+++++++++++++
+
           for (int i = 0; i < 64; i++)
           {
-            plain_buf[i] = pw.i[i];
+            //plain_buf[i] = pw.i[i];  //u32 i[64];  uchar-u8 uint-u32 64*4=256位
+            plain_buf_plus[i] = pw.i[i];
           }
+          printf("调用 apply_rules\n 每条rule：\n"); //调用了 apply_rules 而非 apply_rules_optimized
+          //printf("%s\n",straight_ctx->kernel_rules_buf[off].cmds,straight_ctx->kernel_rules_buf[off].cmds[0],straight_ctx->kernel_rules_buf[off].cmds[1],straight_ctx->kernel_rules_buf[off].cmds[2]);
+          //printf("%x %x %x\n",);
+          u8 name;
+          for (u32 i1 = 0; straight_ctx->kernel_rules_buf[off].cmds[i1] != 0; i1++)
+            {
+              const u32 cmd = straight_ctx->kernel_rules_buf[off].cmds[i1];
+              //printf("%x ",cmd);
+              //name = (cmd >>  0) & 0xff;
+              //const u8 p0   = (cmd >>  8) & 0xff;
+              //const u8 p1   = (cmd >> 16) & 0xff;
+              //const u9 p2= (cmd >> 24) & 0xff; //可不可以加？？？？
+              //printf("[%c %c %c] ",name,p0,p1);
+              // we need to guarantee input length < 256 otherwise functions like rule_op_mangle_switch_last() and others will read out of boundary
+            }
+          
+          //printf("\n");
+          //搞清楚格式：1.直接打印(已知kernel_rules_buf的类型是*kernel_rule_t，即指向{u32 cmds[32]}) 
+          //2.结合rp.c中的cpu_rule_to_kernel_rule
+          
+          plain_len = apply_rules (straight_ctx->kernel_rules_buf[off].cmds, plain_buf_plus, pw.pw_len);
+        }
 
-          plain_len = apply_rules (straight_ctx->kernel_rules_buf[off].cmds, plain_buf, pw.pw_len);
+        if(plain_len<0){
+          int 
         }
 
         if (plain_len > hashconfig->pw_max) plain_len = hashconfig->pw_max;

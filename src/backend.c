@@ -1473,6 +1473,7 @@ int hc_cuMemcpyDtoH (hashcat_ctx_t *hashcat_ctx, void *dstHost, CUdeviceptr srcD
   return 0;
 }
 
+//在run_cracker中被调用
 int hc_cuMemcpyDtoD (hashcat_ctx_t *hashcat_ctx, CUdeviceptr dstDevice, CUdeviceptr srcDevice, size_t ByteCount)
 {
   backend_ctx_t *backend_ctx = hashcat_ctx->backend_ctx;
@@ -3377,6 +3378,7 @@ int run_kernel (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, con
 
   if (device_param->is_cuda == true)
   {
+    printf("backend.c run_kernel device_param->is_cuda == true\n");
     CUfunction cuda_function = NULL;
 
     if (device_param->is_cuda == true)
@@ -3468,6 +3470,7 @@ int run_kernel (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, con
 
   if (device_param->is_opencl == true)
   {
+    printf("backend.c run_kernel device_param->is_opencl == true\n");
     cl_kernel opencl_kernel = NULL;
 
     if (device_param->is_opencl == true)
@@ -3915,9 +3918,9 @@ int run_copy (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, const
   }
   else
   {
-    if (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT)
+    if (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT) //！！
     {
-      if (device_param->is_cuda == true)
+      if (device_param->is_cuda == true) //！！
       {
         if (hc_cuMemcpyHtoD (hashcat_ctx, device_param->cuda_d_pws_idx, device_param->pws_idx, pws_cnt * sizeof (pw_idx_t)) == -1) return -1;
 
@@ -4115,6 +4118,7 @@ int run_cracker (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, co
   user_options_t        *user_options       = hashcat_ctx->user_options;
   user_options_extra_t  *user_options_extra = hashcat_ctx->user_options_extra;
 
+  printf("run_cracker函数\n");
   // do the on-the-fly combinator mode encoding
 
   bool iconv_enabled = false;
@@ -4140,6 +4144,7 @@ int run_cracker (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, co
 
   if (user_options->slow_candidates == true)
   {
+    printf("user_options->slow_candidates == true\n");
     /*
     for (u64 pws_idx = 0; pws_idx < pws_cnt; pws_idx++)
     {
@@ -4151,7 +4156,8 @@ int run_cracker (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, co
   }
   else
   {
-    if (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT)
+    printf("not slow-candidates attack_kern==%d\n",user_options_extra->attack_kern);
+    if (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT) //attack_kern == 0
     {
     }
     else if (user_options_extra->attack_kern == ATTACK_KERN_COMBI)
@@ -4177,9 +4183,11 @@ int run_cracker (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, co
   {
     hc_timer_set (&device_param->timer_speed);
   }
+  //--speed-only               |      | Return expected speed of the attack, then quit  
 
   // loop start: most outer loop = salt iteration, then innerloops (if multi)
 
+  printf("outer-loop start salts_cnt=%ld\n",hashes->salts_cnt);
   for (u32 salt_pos = 0; salt_pos < hashes->salts_cnt; salt_pos++)
   {
     while (status_ctx->devices_status == STATUS_PAUSED) sleep (1);
@@ -4215,6 +4223,8 @@ int run_cracker (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, co
     }
     else
     {
+      printf("hashconfig->attack_exec == ATTACK_EXEC_INSIDE_KERNEL (%d)\n",(hashconfig->attack_exec == ATTACK_EXEC_INSIDE_KERNEL));
+      printf("device_param->kernel_loops=%d\n",device_param->kernel_loops); //==77(rulelist)
       if   (hashconfig->attack_exec == ATTACK_EXEC_INSIDE_KERNEL) innerloop_step = device_param->kernel_loops;
       else                                                        innerloop_step = 1;
 
@@ -4224,9 +4234,10 @@ int run_cracker (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, co
     }
 
     // innerloops
-
+    printf("innerloops start and innerloop_cnt=%ld\n",innerloop_cnt); //刚好等于规则的数量？？？
     for (u32 innerloop_pos = 0; innerloop_pos < innerloop_cnt; innerloop_pos += innerloop_step)
     {
+      printf("!!! innerloops+1 \n",innerloop_cnt);  //测试真正运行的次数
       while (status_ctx->devices_status == STATUS_PAUSED) sleep (1);
 
       u32 fast_iteration = 0;
@@ -4235,7 +4246,7 @@ int run_cracker (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, co
 
       if (innerloop_left > innerloop_step)
       {
-        innerloop_left = innerloop_step;
+        innerloop_left = innerloop_step; //?????
 
         fast_iteration = 1;
       }
@@ -4267,13 +4278,17 @@ int run_cracker (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, co
       {
         if (user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT)
         {
+          printf("user_options_extra->attack_kern == ATTACK_KERN_STRAIGHT\n");
           if (device_param->is_cuda == true)
           {
+            printf("device_param->is_cuda == true\n");
             if (hc_cuMemcpyDtoD (hashcat_ctx, device_param->cuda_d_rules_c, device_param->cuda_d_rules + (innerloop_pos * sizeof (kernel_rule_t)), innerloop_left * sizeof (kernel_rule_t)) == -1) return -1;
+            printf("hc_cuMemcpyDtoD 调用完成\n");
           }
 
           if (device_param->is_opencl == true)
           {
+            printf("device_param->is_opencl == true\n");
             if (hc_clEnqueueCopyBuffer (hashcat_ctx, device_param->opencl_command_queue, device_param->opencl_d_rules, device_param->opencl_d_rules_c, innerloop_pos * sizeof (kernel_rule_t), 0, innerloop_left * sizeof (kernel_rule_t), 0, NULL, NULL) == -1) return -1;
           }
         }
@@ -4691,15 +4706,18 @@ int run_cracker (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, co
       if (status_ctx->run_thread_level2 == false) break;
     }
 
+    printf("inner-loop 正常结束\n");
     if (user_options->speed_only == true) break;
 
     //status screen makes use of this, can't reset here
     //device_param->innerloop_msec = 0;
     //device_param->innerloop_pos  = 0;
     //device_param->innerloop_left = 0;
+    printf("run_thread_level2==%d\n",status_ctx->run_thread_level2);
 
     if (status_ctx->run_thread_level2 == false) break;
   }
+  printf("outer-loop 正常结束\n");
 
   //status screen makes use of this, can't reset here
   //device_param->outerloop_msec = 0;
@@ -4720,6 +4738,7 @@ int run_cracker (hashcat_ctx_t *hashcat_ctx, hc_device_param_t *device_param, co
     device_param->speed_only_finish = true;
   }
 
+  printf("run_cracker函数 正常结束\n");
   return 0;
 }
 

@@ -171,7 +171,7 @@ void slow_candidates_next (hashcat_ctx_t *hashcat_ctx, void *extra_info)
   {
     extra_info_straight_t *extra_info_straight = (extra_info_straight_t *) extra_info;
 
-    if ((extra_info_straight->pos % straight_ctx->kernel_rules_cnt) == 0)
+    if ((extra_info_straight->pos % straight_ctx->kernel_rules_cnt) == 0) //？？？？
     {
       char *line_buf = NULL;
       u32   line_len = 0;
